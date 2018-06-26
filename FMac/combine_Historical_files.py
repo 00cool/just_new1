@@ -118,7 +118,7 @@ def createOriginationCombined(str):
             sample_df['ltv_bins'] = pd.cut(sample_df.ltv[sample_df.ltv<999],5,include_lowest=True)
             
             sample_df['Year'] = ['19'+x if x=='99' else '20'+x for x in (sample_df['id_loan'].apply(lambda x: x[2:4]))]
-            perf_df.to_csv(file, mode='a', header=writeHeader1,index=False,encoding='utf-8')
+            sample_df.to_csv(file, mode='a', header=writeHeader1,index=False,encoding='utf-8')
             writeHeader1=False
     return sample_df
 
@@ -242,7 +242,7 @@ def main():
     orig1_df = createOriginationCombined(sampleOrigFiles)
     per1_df = createPerformanceCombined(samplePerfFiles)
     
-    combined1_df = orig_df.merge(per_df,on='id_loan')
+    combined1_df = orig1_df.merge(per1_df,on='id_loan')
     combined_df.to_csv('combined_SF_smaple_data.csv', encoding='utf-8', index=False)
     
 #     orig2_df = createOriginationCombined(historical_Files)
