@@ -75,6 +75,7 @@ def fillNA(df):
     df['misc_costs']=df['misc_costs'].fillna(0)
     df['actual_loss']=df['actual_loss'].fillna(0)
     df['modcost']=df['modcost'].fillna(0)
+    df['stepmod_ind']=df['stepmod_ind'].fillna('X')
     return df
 
 
@@ -97,9 +98,9 @@ def createOriginationCombined(str):
     #print(str)
     writeHeader1 = True
     if "sample" in str:
-        filename= "SampleOriginationCombined.csv"
+        filename= "SampleOriginationCombined_1.csv"
     else:
-        filename= "HistoricalOriginationCombined.csv"
+        filename= "HistoricalOriginationCombined_1.csv"
     
     abc = tqdm(glob.glob(str))
       
@@ -112,10 +113,12 @@ def createOriginationCombined(str):
             sample_df = changedatatype(sample_df)
             sample_df.dt_first_pi = pd.to_datetime(sample_df.dt_first_pi.apply(lambda x: x[:4] +'/'+x[4:]))
             sample_df.dt_matr = pd.to_datetime(sample_df.dt_matr.apply(lambda x: x[:4] +'/'+x[4:]))
-            sample_df['fico_bins'] = pd.cut(sample_df.fico[sample_df.fico<9999],5,include_lowest=True)
-            sample_df['cltv_bins'] = pd.cut(sample_df.cltv[sample_df.cltv<999],7,include_lowest=True)
-            sample_df['dti_bins'] = pd.cut(sample_df.dti[sample_df.dti<999],5,include_lowest=True)
-            sample_df['ltv_bins'] = pd.cut(sample_df.ltv[sample_df.ltv<999],5,include_lowest=True)
+            sample_df['fico_bins'] = pd.cut(sample_df.fico,[0,600,680,720,760,780,850,900,9999],include_lowest=True)
+            sample_df['cltv_bins'] = pd.cut(sample_df.cltv,[0,6,50,70,80,90,110,150,200,999],include_lowest=True)
+            sample_df['dti_bins'] = pd.cut(sample_df.dti,[0,27,36,46,65,999],include_lowest=True)
+            sample_df['ltv_bins'] = pd.cut(sample_df.ltv,[6,50,70,80,90,105,999],include_lowest=True)
+            sample_df['mi_pct'] = pd.cut(sample_df.mi_pct,[1,20,30,40,55,999],include_lowest=True)
+
             
             sample_df['Year'] = ['19'+x if x=='99' else '20'+x for x in (sample_df['id_loan'].apply(lambda x: x[2:4]))]
             sample_df.to_csv(file, mode='a', header=writeHeader1,index=False,encoding='utf-8')
@@ -242,8 +245,9 @@ def main():
     orig1_df = createOriginationCombined(sampleOrigFiles)
     per1_df = createPerformanceCombined(samplePerfFiles)
     
-    combined1_df = orig1_df.merge(per1_df,on='id_loan')
-    combined_df.to_csv('combined_SF_smaple_data.csv', encoding='utf-8', index=False)
+    combined_sample_df = orig1_df.join(per1_df,on='id_loan',lsuffix='_')
+    combined_sample_df.drop('id_loan_',axis=1,inplace=True)
+    combined_sample_df.to_csv('combined_SF_smaple_data.csv', encoding='utf-8', index=False)
     
 #     orig2_df = createOriginationCombined(historical_Files)
 #     per2_df = createPerformanceCombined(historical_timeFiles)
