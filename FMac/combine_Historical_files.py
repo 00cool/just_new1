@@ -91,16 +91,16 @@ def changedtype(df):
     return df
 
 
-# In[7]:
+# In[6]:
 
 
 def createOriginationCombined(str):
     #print(str)
     writeHeader1 = True
     if "sample" in str:
-        filename= "SampleOriginationCombined_1.csv"
+        filename= "SampleOriginationCombined.csv"
     else:
-        filename= "HistoricalOriginationCombined_1.csv"
+        filename= "HistoricalOriginationCombined.csv"
     
     abc = tqdm(glob.glob(str))
       
@@ -117,7 +117,7 @@ def createOriginationCombined(str):
             sample_df['cltv_bins'] = pd.cut(sample_df.cltv,[0,6,50,70,80,90,110,150,200,999],include_lowest=True)
             sample_df['dti_bins'] = pd.cut(sample_df.dti,[0,27,36,46,65,999],include_lowest=True)
             sample_df['ltv_bins'] = pd.cut(sample_df.ltv,[6,50,70,80,90,105,999],include_lowest=True)
-            sample_df['mi_pct'] = pd.cut(sample_df.mi_pct,[1,20,30,40,55,999],include_lowest=True)
+            sample_df['mi_pct_bins'] = pd.cut(sample_df.mi_pct,[1,20,30,40,55,999],include_lowest=True)
 
             
             sample_df['Year'] = ['19'+x if x=='99' else '20'+x for x in (sample_df['id_loan'].apply(lambda x: x[2:4]))]
@@ -126,7 +126,7 @@ def createOriginationCombined(str):
     return sample_df
 
 
-# In[8]:
+# In[7]:
 
 
 def createPerformanceCombined(str): 
@@ -227,7 +227,7 @@ def createPerformanceCombined(str):
     return perf_df
 
 
-# In[9]:
+# In[ ]:
 
 
 def main():
@@ -245,9 +245,8 @@ def main():
     orig1_df = createOriginationCombined(sampleOrigFiles)
     per1_df = createPerformanceCombined(samplePerfFiles)
     
-    combined_sample_df = orig1_df.join(per1_df,on='id_loan',lsuffix='_')
-    combined_sample_df.drop('id_loan_',axis=1,inplace=True)
-    combined_sample_df.to_csv('combined_SF_smaple_data.csv', encoding='utf-8', index=False)
+    combined_df = orig1_df.merge(per1_df,on='id_loan')
+    combined_df.to_csv('combined_SF_smaple_data.csv', index=False)
     
 #     orig2_df = createOriginationCombined(historical_Files)
 #     per2_df = createPerformanceCombined(historical_timeFiles)
@@ -256,7 +255,7 @@ def main():
 #     combined_df.to_csv('combined_SF_historical_all_data.csv', encoding='utf-8', index=False)
 
 
-# In[244]:
+# In[ ]:
 
 
 if __name__ == '__main__':
