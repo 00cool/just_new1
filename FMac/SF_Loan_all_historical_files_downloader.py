@@ -34,7 +34,7 @@ def assure_path_exists(path):
 def extracrtZip(s,monthlistdata,path):
     abc = tqdm(monthlistdata)
     for month in abc:
-        abc.set_description("Downloading {}".format(month[15:36]))
+        abc.set_description("Downloading {}".format(month[56:78]))
         r = s.get(month)
         z = ZipFile(BytesIO(r.content)) 
         z.extractall(path)
@@ -114,7 +114,7 @@ def main():
     startYear = 1999
     endYear = 2016
     user = 'eagle11061997@gmail.com'
-    password = 'W~13hnb^'
+    password = '>w@<6J=^'
     
     payload=payloadCreation(user,password)
     getsampleFilesFromFreddieMac(payload,startYear,endYear,foldername1)
