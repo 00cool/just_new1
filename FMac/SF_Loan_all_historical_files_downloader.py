@@ -1,3 +1,9 @@
+
+# coding: utf-8
+
+# In[1]:
+
+
 # Prgramitically Log in to Freddie Mac Webisite and download all the files based on request
 import requests
 import re
@@ -15,12 +21,14 @@ import numpy as np
 import glob
 
 
+# In[2]:
 
 
 url='https://freddiemac.embs.com/FLoan/secure/auth.php'
 postUrl='https://freddiemac.embs.com/FLoan/Data/download3.php'
 
 
+# In[3]:
 
 
 def payloadCreation(user, passwd):
@@ -31,15 +39,23 @@ def assure_path_exists(path):
     if not os.path.exists(path):
             os.makedirs(path)
 
-def extracrtZip(s,monthlistdata,path):
+def extracrtZip(s,monthlistdata,path,more=False):
     abc = tqdm(monthlistdata)
     for month in abc:
-        abc.set_description("Downloading {}".format(month[56:78]))
+        if more:
+            abc.set_description("Downloading {}".format(month[54:75]))
+        else:
+            abc.set_description("Downloading {}".format(month[54:65]))
         r = s.get(month)
-        z = ZipFile(BytesIO(r.content)) 
+        z = ZipFile(BytesIO(r.content))
         z.extractall(path)
+        if more:
+            p1 = glob.glob(path+"/historical_data1*.zip")[0]
+            with ZipFile(p1,mode='r') as zip:
+                zip.extractall(path)
 
 
+# In[4]:
 
 
 def getsampleFilesFromFreddieMac(payload,st,en,foldername):
@@ -72,6 +88,8 @@ def getsampleFilesFromFreddieMac(payload,st,en,foldername):
         extracrtZip(s,sampledata,Samplepath)
 
 
+# In[5]:
+
 
 def getFilesFromFreddieMacPeryear(payload,st,en,foldername):
     with requests.Session() as s:
@@ -102,9 +120,10 @@ def getFilesFromFreddieMacPeryear(payload,st,en,foldername):
                         finallink ='https://freddiemac.embs.com/FLoan/Data/' + link
     #                     print(finallink)
                         historicaldata.append(finallink)
-        extracrtZip(s,historicaldata,Historicalpath)
+        extracrtZip(s,historicaldata,Historicalpath,more=True)
 
 
+# In[6]:
 
 
 def main():
@@ -120,6 +139,8 @@ def main():
     getsampleFilesFromFreddieMac(payload,startYear,endYear,foldername1)
     getFilesFromFreddieMacPeryear(payload,startYear,endYear,foldername2)
 
+
+# In[7]:
 
 
 if __name__ == '__main__':
