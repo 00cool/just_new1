@@ -66,7 +66,7 @@ def fillNA(df):
     df['non_int_brng_upb']=df['non_int_brng_upb'].fillna(0)
     df['dt_lst_pi']=df['dt_lst_pi'].fillna('189901')
     df['mi_recoveries']=df['mi_recoveries'].fillna(0)
-    df['net_sale_proceeds']=df['net_sale_proceeds'].fillna('-999.0')
+    df['net_sale_proceeds']=df['net_sale_proceeds'].fillna('0')
     df['non_mi_recoveries']=df['non_mi_recoveries'].fillna(0)
     df['expenses']=df['expenses'].fillna(0)
     df['legal_costs']=df['legal_costs'].fillna(0)
@@ -172,7 +172,7 @@ def createPerformanceCombined(str):
                               'maint_pres_costs','taxes_ins_costs','misc_costs','actual_loss', 'modcost','stepmod_ind']
 #             perf_df['delq_sts'] = [ 999 if x=='R' else x for x in (perf_df['delq_sts'].apply(lambda x: x))]
 #             perf_df['delq_sts'] = [ 0 if x=='XX' else x for x in (perf_df['delq_sts'].apply(lambda x: x))]
-            perf_df.loc[(perf_df.net_sale_proceeds=='U')|(perf_df.net_sale_proceeds=='C'),'net_sale_proceeds'] = '0.0'
+            perf_df.loc[(perf_df.net_sale_proceeds=='U')|(perf_df.net_sale_proceeds=='C'),'net_sale_proceeds'] = '0'
 #             perf_df['net_sale_proceeds'] = [ '0.0' if x=='C' else x for x in (perf_df['net_sale_proceeds'].apply(lambda x: x))]
             
             perf_df.cd_zero_bal = perf_df.cd_zero_bal.apply(lambda x : chng(x))
