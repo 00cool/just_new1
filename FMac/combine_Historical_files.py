@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[31]:
 
 
 import requests
@@ -17,7 +17,7 @@ import glob
 import seaborn as sns
 
 
-# In[2]:
+# In[32]:
 
 
 def fillNAN(df):
@@ -42,7 +42,7 @@ def fillNAN(df):
     return df
 
 
-# In[3]:
+# In[33]:
 
 
 def changedatatype(df):
@@ -52,7 +52,7 @@ def changedatatype(df):
     return df
 
 
-# In[4]:
+# In[34]:
 
 
 def fillNA(df):
@@ -79,7 +79,7 @@ def fillNA(df):
     return df
 
 
-# In[5]:
+# In[35]:
 
 
 def changedtype(df):
@@ -91,7 +91,7 @@ def changedtype(df):
     return df
 
 
-# In[6]:
+# In[36]:
 
 
 def chnge_code_zero(x):
@@ -114,7 +114,7 @@ def chnge_delinquecy(x):
         return x
 
 
-# In[7]:
+# In[37]:
 
 
 def createOriginationCombined(str):
@@ -146,10 +146,10 @@ def createOriginationCombined(str):
             sample_df['Year'] = ['19'+x if x=='99' else '20'+x for x in (sample_df['id_loan'].apply(lambda x: x[2:4]))]
             sample_df.to_csv(file, mode='a', header=writeHeader1,index=False,encoding='utf-8')
             writeHeader1=False
-    return sample_df
+    return filename
 
 
-# In[8]:
+# In[41]:
 
 
 def createPerformanceCombined(str): 
@@ -167,18 +167,19 @@ def createPerformanceCombined(str):
             abc.set_description("Working on  {}".format(f.split('\\')[-1]))
             perf_df = pd.read_csv(f,sep="|",header=None,skipinitialspace=True,dtype='unicode')
             perf_df.columns =['id_loan','svcg_cycle','current_upb','delq_sts','loan_age','mths_remng', 'repch_flag',
-                              'flag_mod','cd_zero_bal', 'dt_zero_bal','current_int_rt','non_int_brng_upb','dt_lst_pi',
-                              'mi_recoveries','net_sale_proceeds','non_mi_recoveries','expenses', 'legal_costs', 
-                              'maint_pres_costs','taxes_ins_costs','misc_costs','actual_loss', 'modcost','stepmod_ind']
-#             perf_df['delq_sts'] = [ 999 if x=='R' else x for x in (perf_df['delq_sts'].apply(lambda x: x))]
-#             perf_df['delq_sts'] = [ 0 if x=='XX' else x for x in (perf_df['delq_sts'].apply(lambda x: x))]
+                                          'flag_mod','cd_zero_bal', 'dt_zero_bal','current_int_rt','non_int_brng_upb','dt_lst_pi',
+                                          'mi_recoveries','net_sale_proceeds','non_mi_recoveries','expenses', 'legal_costs', 
+                                          'maint_pres_costs','taxes_ins_costs','misc_costs','actual_loss', 'modcost','stepmod_ind']
+            #             perf_df['delq_sts'] = [ 999 if x=='R' else x for x in (perf_df['delq_sts'].apply(lambda x: x))]
+            #             perf_df['delq_sts'] = [ 0 if x=='XX' else x for x in (perf_df['delq_sts'].apply(lambda x: x))]
             perf_df.loc[(perf_df.net_sale_proceeds=='U')|(perf_df.net_sale_proceeds=='C'),'net_sale_proceeds'] = '0'
-#             perf_df['net_sale_proceeds'] = [ '0.0' if x=='C' else x for x in (perf_df['net_sale_proceeds'].apply(lambda x: x))]
-            
-            perf_df.cd_zero_bal = perf_df.cd_zero_bal.apply(lambda x : chng(x))
-            
+            #             perf_df['net_sale_proceeds'] = [ '0.0' if x=='C' else x for x in (perf_df['net_sale_proceeds'].apply(lambda x: x))]
+
+            #             perf_df.cd_zero_bal = perf_df.cd_zero_bal.apply(lambda x : chnge_code_zero(x))
+
             perf_df = fillNA(perf_df)
             perf_df = changedtype(perf_df)
+            perf_df.cd_zero_bal = perf_df.cd_zero_bal.apply(lambda x : chnge_code_zero(x))
 
             ve =perf_df.drop(perf_df[(perf_df.cd_zero_bal=='S')|(perf_df.cd_zero_bal=='F')].index)
             h = ve.groupby(by='id_loan').last().reset_index()
@@ -206,8 +207,8 @@ def createPerformanceCombined(str):
             perf_df.loc[perf_df.id_loan.isin(defauled_upb.id_loan.values),'defaulted_upb'] = defauled_upb.current_upb.values
             perf_df.loc[perf_df.id_loan.isin(prepaid_upb.id_loan.values),'prepaid_upb'] = prepaid_upb.current_upb.values
 
-#             perf_df = perf_df.drop(perf_df[perf_df.cd_zero_bal=='06'].index)
-#             perf_df = perf_df.drop('repch_flag',axis=1)
+            #             perf_df = perf_df.drop(perf_df[perf_df.cd_zero_bal=='06'].index)
+            #             perf_df = perf_df.drop('repch_flag',axis=1)
 
             perf_df.dt_lst_pi = pd.to_datetime(perf_df.dt_lst_pi.astype('str').apply(lambda x: x[:4] +'/'+x[4:]))
             perf_df.dt_zero_bal = pd.to_datetime(perf_df.dt_zero_bal.astype('str').apply(lambda x: x[:4] +'/'+x[4:]))
@@ -222,38 +223,37 @@ def createPerformanceCombined(str):
 
             perf_df['prepayment']=0
             perf_df.loc[(perf_df.cd_zero_bal=='P')&(perf_df.mths_remng!=0),'prepayment'] = 1 
-
-#             de = perf_df[perf_df.default==1]
-#             months_delinquecny = (pd.to_datetime(de.dt_zero_bal.values).year - pd.to_datetime(de.last_payment_date.values).year)*12 + (pd.to_datetime(de.dt_zero_bal.values).month - pd.to_datetime(de.last_payment_date.values).month)
-
-            c = perf_df[(perf_df.dt_lst_pi!='1899-01-01')&(perf_df.dt_zero_bal!='1899-01-01')]
-            o = (pd.to_datetime(c.dt_zero_bal.values).year - pd.to_datetime(c.dt_lst_pi.values).year)*12 + (pd.to_datetime(c.dt_zero_bal.values).month - pd.to_datetime(c.dt_lst_pi.values).month)
+            #             de = perf_df[perf_df.default==1]
+            #             months_delinquecny = (pd.to_datetime(de.dt_zero_bal.values).year - pd.to_datetime(de.last_payment_date.values).year)*12 + (pd.to_datetime(de.dt_zero_bal.values).month - pd.to_datetime(de.last_payment_date.values).month)
 
             perf_df['lpi2zero'] = 0
-            perf_df.loc[(perf_df.dt_lst_pi!='1899-01-01')&(perf_df.dt_zero_bal!='1899-01-01'),'lpi2zero'] = o
-
-            de_i = perf_df.loc[(perf_df.lpi2zero!=0)&(perf_df.default==1)] 
-
             perf_df['delinquent_interest'] = 0
-            perf_df.loc[(perf_df.lpi2zero!=0)&(perf_df.default==1),'delinquent_interest'] = (de_i.lpi2zero) * (de_i.defaulted_upb - de_i.non_int_brng_upb) * (de_i.current_int_rt - 0.35) / 1200
-            
-            perf_df['total_costs'] = perf_df[['legal_costs','maint_pres_costs', 'taxes_ins_costs',
-                                  'misc_costs']].sum(axis=1)
-
-            perf_df['total_proceeds'] = perf_df[['mi_recoveries','net_sale_proceeds', 'non_mi_recoveries', 'expenses']].sum(axis=1)
-            perf_df['net_loss'] = perf_df['actual_loss']-perf_df['total_costs']
-
+            perf_df['net_loss'] = perf_df.actual_loss.copy()
             perf_df['loss_severity'] = 0
 
+            c = perf_df[(perf_df.dt_lst_pi!='1899-01-01')&(perf_df.dt_zero_bal!='1899-01-01')]
+            if c.shape[0]>0:
+                o = (pd.to_datetime(c.dt_zero_bal.values).year - pd.to_datetime(c.dt_lst_pi.values).year)*12 + (pd.to_datetime(c.dt_zero_bal.values).month - pd.to_datetime(c.dt_lst_pi.values).month)
+
+                perf_df.loc[(perf_df.dt_lst_pi!='1899-01-01')&(perf_df.dt_zero_bal!='1899-01-01'),'lpi2zero'] = o
+
+                de_i = perf_df.loc[(perf_df.lpi2zero!=0)&(perf_df.default==1)] 
+                perf_df.loc[(perf_df.lpi2zero!=0)&(perf_df.default==1),'delinquent_interest'] = (de_i.lpi2zero) * (de_i.defaulted_upb - de_i.non_int_brng_upb) * (de_i.current_int_rt - 0.35) / 1200
+
+            perf_df['total_proceeds'] = perf_df[['mi_recoveries','net_sale_proceeds', 'non_mi_recoveries']].sum(axis=1)
+
+            if perf_df[perf_df.actual_loss!=0].shape[0]>0:
+                perf_df.loc[(perf_df.actual_loss!=0),'net_loss'] = perf_df.loc[(perf_df.actual_loss!=0),['actual_loss','modcost']].T.apply(lambda x: x[0]-x[1])
+
             perf_df.loc[perf_df.net_loss!=0,'loss_severity'] = perf_df.loc[perf_df.net_loss!=0,['defaulted_upb','net_loss']].T.apply(lambda x: x[1]/x[0])
-            
+
             perf_df.delq_sts = perf_df.delq_sts.apply(lambda x : chnge_delinquecy(x))
             perf_df.to_csv(file, mode='a', header=writeHeader2,index=False,encoding='utf-8')
             writeHeader2=False
-    return perf_df
+    return filename
 
 
-# In[9]:
+# In[ ]:
 
 
 def main():
@@ -286,9 +286,63 @@ def main():
 #     combined2_df.to_csv('combined_SF_historical_all_data.csv', encoding='utf-8', index=False)
 
 
-# In[10]:
+# In[ ]:
 
 
 if __name__ == '__main__':
     main()
+
+
+# In[25]:
+
+
+prf = pd.read_csv('SamplePerformanceCombinedSummary.csv')
+
+
+# In[30]:
+
+
+prf.actual_loss.copy().value_counts()
+
+
+# In[20]:
+
+
+com = pd.read_csv('combined_SF_smaple_data.csv')
+
+
+# In[24]:
+
+
+com.loss_severity.value_counts(dropna=False)
+
+
+# In[ ]:
+
+
+com[com.total_costs!=0].shape[0] - com[com.expenses!=0].shape[0]
+
+
+# In[ ]:
+
+
+com.shape[0] - com[com.actual_loss==0].shape[0]
+
+
+# In[ ]:
+
+
+com.loc[(com.actual_loss!=0),['actual_loss','modcost']].T.apply(lambda x: x[0]-x[1])
+
+
+# In[ ]:
+
+
+com[com.actual_loss!=0].shape[0] , com[(com.actual_loss!=0) & (com.modcost!=0) ].shape[0]
+
+
+# In[ ]:
+
+
+(com.actual_loss - com.modcost).value_counts()
 
