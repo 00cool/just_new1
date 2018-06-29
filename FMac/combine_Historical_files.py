@@ -94,6 +94,29 @@ def changedtype(df):
 # In[6]:
 
 
+def chnge_code_zero(x):
+    if x=='00':
+        return 'C'
+    elif x=='01':
+        return 'P'
+    elif x=='06':
+        return 'R'
+    elif x=='03':
+        return 'S'
+    elif x=='09':
+        return 'F'
+def chnge_delinquecy(x):
+    if x=='0':
+        return 'C'
+    elif x not in list(map(str,list(range(1,9))))+['R']:
+        return '9+'
+    else:
+        return x
+
+
+# In[7]:
+
+
 def createOriginationCombined(str):
     #print(str)
     writeHeader1 = True
@@ -117,7 +140,7 @@ def createOriginationCombined(str):
             sample_df['cltv_bins'] = pd.cut(sample_df.cltv,[0,6,50,70,80,90,110,150,200,999],include_lowest=True)
             sample_df['dti_bins'] = pd.cut(sample_df.dti,[0,27,36,46,65,999],include_lowest=True)
             sample_df['ltv_bins'] = pd.cut(sample_df.ltv,[6,50,70,80,90,105,999],include_lowest=True)
-            sample_df['mi_pct_bins'] = pd.cut(sample_df.mi_pct,[1,20,30,40,55,999],include_lowest=True)
+            sample_df['mi_pct_bins'] = pd.cut(sample_df.mi_pct,[0,20,30,40,55,999],include_lowest=True)
 
             
             sample_df['Year'] = ['19'+x if x=='99' else '20'+x for x in (sample_df['id_loan'].apply(lambda x: x[2:4]))]
@@ -126,7 +149,7 @@ def createOriginationCombined(str):
     return sample_df
 
 
-# In[7]:
+# In[8]:
 
 
 def createPerformanceCombined(str): 
@@ -151,17 +174,19 @@ def createPerformanceCombined(str):
 #             perf_df['delq_sts'] = [ 0 if x=='XX' else x for x in (perf_df['delq_sts'].apply(lambda x: x))]
             perf_df.loc[(perf_df.net_sale_proceeds=='U')|(perf_df.net_sale_proceeds=='C'),'net_sale_proceeds'] = '0.0'
 #             perf_df['net_sale_proceeds'] = [ '0.0' if x=='C' else x for x in (perf_df['net_sale_proceeds'].apply(lambda x: x))]
-
+            
+            perf_df.cd_zero_bal = perf_df.cd_zero_bal.apply(lambda x : chng(x))
+            
             perf_df = fillNA(perf_df)
             perf_df = changedtype(perf_df)
 
-            ve =perf_df.drop(perf_df[(perf_df.cd_zero_bal=='03')|(perf_df.cd_zero_bal=='09')].index)
+            ve =perf_df.drop(perf_df[(perf_df.cd_zero_bal=='S')|(perf_df.cd_zero_bal=='F')].index)
             h = ve.groupby(by='id_loan').last().reset_index()
-            defauled_upb = h.loc[h.id_loan.isin(perf_df[(perf_df.cd_zero_bal=='03')|(perf_df.cd_zero_bal=='09')].id_loan.values),['id_loan','current_upb']]
+            defauled_upb = h.loc[h.id_loan.isin(perf_df[(perf_df.cd_zero_bal=='S')|(perf_df.cd_zero_bal=='F')].id_loan.values),['id_loan','current_upb']]
 
-            ve1 =perf_df.drop(perf_df[(perf_df.cd_zero_bal=='01')].index)
+            ve1 =perf_df.drop(perf_df[(perf_df.cd_zero_bal=='P')].index)
             h1 = ve1.groupby(by='id_loan').last().reset_index()
-            prepaid_upb = h1.loc[h1.id_loan.isin(perf_df[(perf_df.cd_zero_bal=='01')].id_loan.values),['id_loan','current_upb']]
+            prepaid_upb = h1.loc[h1.id_loan.isin(perf_df[(perf_df.cd_zero_bal=='P')].id_loan.values),['id_loan','current_upb']]
 
             lpi = perf_df.loc[(perf_df.delq_sts=='0'),['id_loan','svcg_cycle']]
             lpi =lpi.groupby(by='id_loan').last().reset_index()
@@ -189,28 +214,28 @@ def createPerformanceCombined(str):
             perf_df.delq_sts_180_date = pd.to_datetime(perf_df.delq_sts_180_date.astype('str').apply(lambda x: x[:4] +'/'+x[4:]))
             perf_df.last_payment_date = pd.to_datetime(perf_df.last_payment_date.astype('str').apply(lambda x: x[:4] +'/'+x[4:]))
 
-            perf_df['GT_90_days_deliquecy'] = perf_df.delq_sts.values
-            perf_df['GT_90_days_deliquecy'] = perf_df['GT_90_days_deliquecy'].apply(lambda x: 0 if (x=='0') | (x=='1') | (x=='2')|(x=='XX')  else 1)
+            perf_df['GT_90_days_delinquecy'] = perf_df.delq_sts.values
+            perf_df['GT_90_days_delinquecy'] = perf_df['GT_90_days_delinquecy'].apply(lambda x: 0 if (x=='0') | (x=='1') | (x=='2')|(x=='XX')  else 1)
 
             perf_df['default'] = perf_df.cd_zero_bal.values
-            perf_df['default'] = perf_df['default'].apply(lambda x: 1 if (x=='03') | (x=='09') else 0)
+            perf_df['default'] = perf_df['default'].apply(lambda x: 1 if (x=='S') | (x=='F') else 0)
 
             perf_df['prepayment']=0
-            perf_df.loc[(perf_df.cd_zero_bal=='01')&(perf_df.mths_remng!=0),'prepayment'] = 1 
+            perf_df.loc[(perf_df.cd_zero_bal=='P')&(perf_df.mths_remng!=0),'prepayment'] = 1 
 
-            de = perf_df[perf_df.default==1]
-            months_deliquecny = (pd.to_datetime(de.dt_zero_bal.values).year - pd.to_datetime(de.last_payment_date.values).year)*12 + (pd.to_datetime(de.dt_zero_bal.values).month - pd.to_datetime(de.last_payment_date.values).month)
+#             de = perf_df[perf_df.default==1]
+#             months_delinquecny = (pd.to_datetime(de.dt_zero_bal.values).year - pd.to_datetime(de.last_payment_date.values).year)*12 + (pd.to_datetime(de.dt_zero_bal.values).month - pd.to_datetime(de.last_payment_date.values).month)
 
             c = perf_df[(perf_df.dt_lst_pi!='1899-01-01')&(perf_df.dt_zero_bal!='1899-01-01')]
-            o = (pd.to_datetime(c.dt_zero_bal.values).year - pd.to_datetime(c.last_payment_date.values).year)*12 + (pd.to_datetime(c.dt_zero_bal.values).month - pd.to_datetime(c.last_payment_date.values).month)
+            o = (pd.to_datetime(c.dt_zero_bal.values).year - pd.to_datetime(c.dt_lst_pi.values).year)*12 + (pd.to_datetime(c.dt_zero_bal.values).month - pd.to_datetime(c.dt_lst_pi.values).month)
 
             perf_df['lpi2zero'] = 0
             perf_df.loc[(perf_df.dt_lst_pi!='1899-01-01')&(perf_df.dt_zero_bal!='1899-01-01'),'lpi2zero'] = o
 
             de_i = perf_df.loc[(perf_df.lpi2zero!=0)&(perf_df.default==1)] 
 
-            perf_df['deliquent_interest'] = 0
-            perf_df.loc[(perf_df.lpi2zero!=0)&(perf_df.default==1),'deliquent_interest'] = (de_i.lpi2zero) * (de_i.defaulted_upb - de_i.non_int_brng_upb) * (de_i.current_int_rt - 0.35) / 1200
+            perf_df['delinquent_interest'] = 0
+            perf_df.loc[(perf_df.lpi2zero!=0)&(perf_df.default==1),'delinquent_interest'] = (de_i.lpi2zero) * (de_i.defaulted_upb - de_i.non_int_brng_upb) * (de_i.current_int_rt - 0.35) / 1200
             
             perf_df['total_costs'] = perf_df[['legal_costs','maint_pres_costs', 'taxes_ins_costs',
                                   'misc_costs']].sum(axis=1)
@@ -222,12 +247,13 @@ def createPerformanceCombined(str):
 
             perf_df.loc[perf_df.net_loss!=0,'loss_severity'] = perf_df.loc[perf_df.net_loss!=0,['defaulted_upb','net_loss']].T.apply(lambda x: x[1]/x[0])
             
+            perf_df.delq_sts = perf_df.delq_sts.apply(lambda x : chnge_delinquecy(x))
             perf_df.to_csv(file, mode='a', header=writeHeader2,index=False,encoding='utf-8')
             writeHeader2=False
     return perf_df
 
 
-# In[ ]:
+# In[9]:
 
 
 def main():
@@ -242,20 +268,25 @@ def main():
     historical_timeFiles=str(os.getcwd())+"/"+foldername2+"/historical_data1_*.txt"
     
     
-    orig1_df = createOriginationCombined(sampleOrigFiles)
-    per1_df = createPerformanceCombined(samplePerfFiles)
+    orig1_file = createOriginationCombined(sampleOrigFiles)
+    per1_file = createPerformanceCombined(samplePerfFiles)
     
+    orig1_df = pd.read_csv(orig1_file)
+    per1_df = pd.read_csv(per1_file,dtype={'delq_sts':'str'})
     combined_df = orig1_df.merge(per1_df,on='id_loan')
     combined_df.to_csv('combined_SF_smaple_data.csv', index=False)
     
-#     orig2_df = createOriginationCombined(historical_Files)
-#     per2_df = createPerformanceCombined(historical_timeFiles)
+#     orig2_file = createOriginationCombined(historical_Files)
+#     per2_file = createPerformanceCombined(historical_timeFiles)
+
+#     orig2_df = pd.read_csv(orig2_file)
+#     per2_df = pd.read_csv(per2_file,dtype={'delq_sts':'str'})
     
-#     combined2_df = orig_df.merge(per_df,on='id_loan')
-#     combined_df.to_csv('combined_SF_historical_all_data.csv', encoding='utf-8', index=False)
+#     combined2_df = orig2_df.merge(per2_df,on='id_loan')
+#     combined2_df.to_csv('combined_SF_historical_all_data.csv', encoding='utf-8', index=False)
 
 
-# In[ ]:
+# In[10]:
 
 
 if __name__ == '__main__':
