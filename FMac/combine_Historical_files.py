@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[31]:
+# In[1]:
 
 
 import requests
@@ -17,7 +17,7 @@ import glob
 import seaborn as sns
 
 
-# In[32]:
+# In[2]:
 
 
 def fillNAN(df):
@@ -42,7 +42,7 @@ def fillNAN(df):
     return df
 
 
-# In[33]:
+# In[3]:
 
 
 def changedatatype(df):
@@ -52,7 +52,7 @@ def changedatatype(df):
     return df
 
 
-# In[34]:
+# In[4]:
 
 
 def fillNA(df):
@@ -79,7 +79,7 @@ def fillNA(df):
     return df
 
 
-# In[35]:
+# In[5]:
 
 
 def changedtype(df):
@@ -91,7 +91,7 @@ def changedtype(df):
     return df
 
 
-# In[36]:
+# In[6]:
 
 
 def chnge_code_zero(x):
@@ -114,7 +114,56 @@ def chnge_delinquecy(x):
         return x
 
 
-# In[37]:
+# In[7]:
+
+
+def orig_summary_statistics(x):
+    names = {
+        'loan_count': x['id_loan'].count(),
+        'total_orig_UPB ($B)':  x['orig_upb'].sum()/1000000000,
+        'average_orig_UPB':  x['orig_upb'].mean(),
+        'weighted_average_fico':  (x.loc[x.fico!=9999,'orig_upb'] * x.loc[x.fico!=9999,'fico']).sum()/x.loc[x.fico!=9999,'orig_upb'].sum(),
+        'weighted_average_cltv':  (x.loc[x.cltv!=999,'orig_upb'] * x.loc[x.cltv!=999,'cltv']).sum()/x.loc[x.cltv!=999,'orig_upb'].sum(),
+        'weighted_average_ltv':  (x.loc[x.ltv!=999,'orig_upb'] * x.loc[x.ltv!=999,'ltv']).sum()/x.loc[x.ltv!=999,'orig_upb'].sum(),
+        'weighted_average_dti':  (x.loc[x.dti!=999,'orig_upb'] * x.loc[x.dti!=999,'dti']).sum()/x.loc[x.dti!=999,'orig_upb'].sum(),
+        }
+
+    return pd.Series(names, index=['loan_count', 'total_orig_UPB ($B)', 'average_orig_UPB',
+                                   'weighted_average_fico', 'weighted_average_cltv', 'weighted_average_ltv','weighted_average_dti'])
+
+
+# In[ ]:
+
+
+def performance_summary_statistics(x):
+    names = {
+        'loan_count': x['id_loan'].count(),
+        'prepay_loan(%)':  x.loc[x.cd_zero_bal.isin(['P','R']),'id_loan'].count()*100/x['id_loan'].count(),
+        'default_loan(%)' :  x.loc[x.default==1,'id_loan'].count()*100/x['id_loan'].count(),
+        'active_loan(%)':  x.loc[x.cd_zero_bal=='C','id_loan'].count()*100/x['id_loan'].count(),
+        'cumulative_post‐default_event_repurchase(%)':  x.loc[(x.cd_zero_bal.isin(['S','F']))&(x.repch_flag=='Y'),'id_loan'].count()*100/x['id_loan'].count(),
+        'ever_D180(%)':  x.loc[(x.delq_sts_180_upb!=0)|(x.delq_sts=='R'),'id_loan'].count()*100/x['id_loan'].count(),
+        'D180_and_pre‐D180_credit_event(%)':  x.loc[(x.delq_sts_180_upb!=0)|(x.delq_sts=='R')|(x.default==1),'id_loan'].count()*100/x['id_loan'].count(),
+        'cumulative_modification(%)' : x.loc[x.flag_mod=='Y','id_loan'].count()*100/x['id_loan'].count(),
+        'actuall_loss($M)':  -x.actual_loss.sum()/1000000,
+        'total_orig_UPB($B)':  x.orig_upb.sum()/1000000000,
+        'prepaid_upb(%)':  x.prepaid_upb.sum()*100/x.orig_upb.sum(),
+        'defaulted_upb(%)': x.defaulted_upb.sum()*100/x.orig_upb.sum(),
+        'current_upb(%)':  x.current_upb.sum()*100/x.orig_upb.sum(),
+        'post-defaulted_upb(%)':  x.loc[(com_df.default==1)&(x.repch_flag=='Y'),'defaulted_upb'].sum()*100/x.orig_upb.sum(),
+        'original_UPB_ever_D180(%)':  (x.delq_sts_180_upb.sum()+x.loc[(x.cd_zero_bal=='F'),'defaulted_upb'].sum()+x.loc[(x.delq_sts=='R')&(x.delq_sts_180_upb==0),'current_upb'].sum())*100/x.orig_upb.sum(),
+        'original_UPB_D180_and_pre_D180_credit_event(%)':  (x.delq_sts_180_upb.sum()+x.loc[(x.default==1),'defaulted_upb'].sum()+x.loc[(x.delq_sts=='R')&(x.delq_sts_180_upb==0),'current_upb'].sum())*100/x.orig_upb.sum(),
+        'UPB_weighted_cumulative_modification(%)':  x.loc[x.flag_mod=='Y','current_upb'].sum()*100/x.orig_upb.sum()
+    }
+
+    return pd.Series(names, index=['loan_count', 'prepay_loan(%)', 'default_loan(%)',
+                                   'active_loan(%)', 'cumulative_post‐default_event_repurchase(%)', 'ever_D180(%)'
+                                   ,'D180_and_pre‐D180_credit_event(%)','actuall_loss($M)','total_orig_UPB($B)',
+                                  'prepaid_upb(%)','defaulted_upb(%)','current_upb(%)','post-defaulted_upb(%)','original_UPB_ever_D180(%)'
+                                  ,'original_UPB_D180_and_pre_D180_credit_event(%)','UPB_weighted_cumulative_modification(%)'])
+
+
+# In[8]:
 
 
 def createOriginationCombined(str):
@@ -149,7 +198,7 @@ def createOriginationCombined(str):
     return filename
 
 
-# In[41]:
+# In[9]:
 
 
 def createPerformanceCombined(str): 
@@ -185,9 +234,9 @@ def createPerformanceCombined(str):
             h = ve.groupby(by='id_loan').last().reset_index()
             defauled_upb = h.loc[h.id_loan.isin(perf_df[(perf_df.cd_zero_bal=='S')|(perf_df.cd_zero_bal=='F')].id_loan.values),['id_loan','current_upb']]
 
-            ve1 =perf_df.drop(perf_df[(perf_df.cd_zero_bal=='P')].index)
+            ve1 =perf_df.drop(perf_df[(perf_df.cd_zero_bal=='P')|(perf_df.cd_zero_bal=='R')].index)
             h1 = ve1.groupby(by='id_loan').last().reset_index()
-            prepaid_upb = h1.loc[h1.id_loan.isin(perf_df[(perf_df.cd_zero_bal=='P')].id_loan.values),['id_loan','current_upb']]
+            prepaid_upb = h1.loc[h1.id_loan.isin(perf_df[(perf_df.cd_zero_bal=='P')|(perf_df.cd_zero_bal=='R')].id_loan.values),['id_loan','current_upb']]
 
             lpi = perf_df.loc[(perf_df.delq_sts=='0'),['id_loan','svcg_cycle']]
             lpi =lpi.groupby(by='id_loan').last().reset_index()
@@ -253,7 +302,7 @@ def createPerformanceCombined(str):
     return filename
 
 
-# In[ ]:
+# In[15]:
 
 
 def main():
@@ -264,8 +313,8 @@ def main():
     sampleOrigFiles=str(os.getcwd())+"/"+foldername1+"/sample_orig_*.txt"
     samplePerfFiles=str(os.getcwd())+"/"+foldername1+"/sample_svcg_*.txt"
     
-    historical_Files=str(os.getcwd())+"/"+foldername2+"/historical_data1_*.txt"
-    historical_timeFiles=str(os.getcwd())+"/"+foldername2+"/historical_data1_*.txt"
+    historical_Files=str(os.getcwd())+"/"+foldername2+"/historical_data1_Q*.txt"
+    historical_timeFiles=str(os.getcwd())+"/"+foldername2+"/historical_data1_time_Q*.txt"
     
     
     orig1_file = createOriginationCombined(sampleOrigFiles)
@@ -276,6 +325,14 @@ def main():
     combined_df = orig1_df.merge(per1_df,on='id_loan')
     combined_df.to_csv('combined_SF_smaple_data.csv', index=False)
     
+    com1_df = pd.read_csv('combined_SF_smaple_data.csv')
+
+    orig_summary_statistic1 = com1_df.groupby("Year").apply(orig_summary_statistics).round(1)
+    performance_summary_statistic1 = com1_df.groupby("Year").apply(performance_summary_statistics).round(1)
+   
+    orig_summary_statistic1.to_csv("sample_SF_orig_summary_Statistics.csv",index=False)
+    performance_summary_statistic1.to_csv("sample_SF_performance_summary_Statistics.csv",index=False)
+    
 #     orig2_file = createOriginationCombined(historical_Files)
 #     per2_file = createPerformanceCombined(historical_timeFiles)
 
@@ -284,65 +341,19 @@ def main():
     
 #     combined2_df = orig2_df.merge(per2_df,on='id_loan')
 #     combined2_df.to_csv('combined_SF_historical_all_data.csv', encoding='utf-8', index=False)
+    
+#     com2_df = pd.read_csv('combined_SF_historical_all_data.csv')
+    
+#     orig_summary_statistic2 = com2_df.groupby("Year").apply(orig_summary_statistics).round(1)
+#     performance_summary_statistic2 = com2_df.groupby("Year").apply(performance_summary_statistics).round(1)
+
+#     orig_summary_statistic2.to_csv("full_SF_orig_summary_Statistics.csv",index=False)
+#     performance_summary_statistic2.to_csv("full_SF_performance_summary_Statistics.csv",index=False)
 
 
-# In[ ]:
+# In[16]:
 
 
 if __name__ == '__main__':
     main()
-
-
-# In[25]:
-
-
-prf = pd.read_csv('SamplePerformanceCombinedSummary.csv')
-
-
-# In[30]:
-
-
-prf.actual_loss.copy().value_counts()
-
-
-# In[20]:
-
-
-com = pd.read_csv('combined_SF_smaple_data.csv')
-
-
-# In[24]:
-
-
-com.loss_severity.value_counts(dropna=False)
-
-
-# In[ ]:
-
-
-com[com.total_costs!=0].shape[0] - com[com.expenses!=0].shape[0]
-
-
-# In[ ]:
-
-
-com.shape[0] - com[com.actual_loss==0].shape[0]
-
-
-# In[ ]:
-
-
-com.loc[(com.actual_loss!=0),['actual_loss','modcost']].T.apply(lambda x: x[0]-x[1])
-
-
-# In[ ]:
-
-
-com[com.actual_loss!=0].shape[0] , com[(com.actual_loss!=0) & (com.modcost!=0) ].shape[0]
-
-
-# In[ ]:
-
-
-(com.actual_loss - com.modcost).value_counts()
 
