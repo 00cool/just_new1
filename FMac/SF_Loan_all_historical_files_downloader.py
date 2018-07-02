@@ -28,7 +28,7 @@ url='https://freddiemac.embs.com/FLoan/secure/auth.php'
 postUrl='https://freddiemac.embs.com/FLoan/Data/download3.php'
 
 
-# In[3]:
+# In[2]:
 
 
 def payloadCreation(user, passwd):
@@ -50,9 +50,10 @@ def extracrtZip(s,monthlistdata,path,more=False):
         z = ZipFile(BytesIO(r.content))
         z.extractall(path)
         if more:
-            p1 = glob.glob(path+"/historical_data1*.zip")[0]
-            with ZipFile(p1,mode='r') as zip:
-                zip.extractall(path)
+            p1 = glob.glob(path+"/historical_data1_Q*.zip")
+            for x in p1:
+                with ZipFile(x,mode='r') as zip:
+                    zip.extractall(path)
 
 
 # In[4]:
